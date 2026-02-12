@@ -36,7 +36,7 @@ export const useStore = create(
                     get().calculateBMI();
                 }
 
-                
+               
                 if (updates.onboarded && !state.profile.anonymousID) {
                     try {
                         const anonymousID = Math.random().toString(36).substr(2, 9);
@@ -68,7 +68,7 @@ export const useStore = create(
             }),
 
             addEntry: async (entry) => {
-            
+                
                 set((state) => {
                     const newHistory = [entry, ...state.history];
                     const today = new Date().setHours(0, 0, 0, 0);
@@ -82,11 +82,11 @@ export const useStore = create(
                     };
                 });
 
-               
+              
                 const state = get();
                 if (state.profile.anonymousID) {
                     try {
-                       
+                      
                     } catch (e) {
                         console.error(e);
                     }
@@ -94,9 +94,9 @@ export const useStore = create(
                 
             },
 
-           
+            
             syncWithBackend: async () => {
-             
+              
             },
 
             removeEntry: (id) => set((state) => {

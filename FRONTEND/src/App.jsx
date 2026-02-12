@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useStore } from "./store/useStore";
+import { Onboarding } from "./components/Onboarding";
 import { BentoGrid, BentoItem } from "./components/BentoGrid";
 import { SugarEntry } from "./components/SugarEntry";
 import { SugarShield } from "./components/SugarShield";
 import SugarHeatmap from "./components/SugarHeatmap";
 import GlobalPulse from "./components/GlobalPulse";
-import { Onboarding } from "./components/Onboarding";
+import { generateInsight } from "./services/insightService";
 
-import { Flame, History, Trash2, Droplet, Coffee, Cookie } from "lucide-react";
+import {
+  Flame,
+  History,
+  Trash2,
+  Droplet,
+  Coffee,
+  Cookie,
+  Sparkles
+} from "lucide-react";
+
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 const App = () => {
   const { profile, history, totalToday, streak, removeEntry, addEntry } =
     useStore();
 
   const [mounted, setMounted] = useState(false);
+  const [showInsight, setShowInsight] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -33,10 +45,13 @@ const App = () => {
       ? "text-orange-400"
       : "text-emerald-400";
 
+  const insight = generateInsight(profile, history);
+
   const quickActions = [
     { label: "Soda", grams: 39, icon: <Droplet />, category: "soda" },
     { label: "Coffee", grams: 5, icon: <Coffee />, category: "coffee" },
     { label: "Snack", grams: 12, icon: <Cookie />, category: "snack" },
+    { label: "Dessert", grams: 25, icon: <Sparkles />, category: "dessert" }
   ];
 
   const handleQuickAdd = (action) => {
@@ -46,57 +61,102 @@ const App = () => {
       foodName: action.label,
       sugarGrams: action.grams,
       category: action.category,
-      method: "Manual",
+      method: "Manual"
     });
   };
 
+  const chartData = history
+    .slice(-8)
+    .map((e) => ({
+      grams: e.sugarGrams
+    }));
+
   return (
-    <div className="min-h-screen bg-[#060608] text-white p-4">
+    <div className="min-h-screen bg-[#060608] text-zinc-100 p-4">
       {!profile.onboarded && <Onboarding />}
 
-      {/* HEADER */}
-      <div className="max-w-6xl mx-auto py-6 flex justify-between items-center">
+     
+      <div className="flex justify-between items-center max-w-6xl mx-auto py-6">
         <h1 className="font-black text-xl">BEAT THE SPIKE</h1>
         <History className="text-zinc-400" />
       </div>
 
       <BentoGrid>
-        {/* SHIELD */}
+      
         <BentoItem className="md:col-span-2 flex flex-col items-center">
-          <SugarShield total={totalToday} limit={profile.dailyLimit} />
-          <h2 className={`text-4xl font-black mt-4 ${statusColor}`}>
+          <SugarShield
+            total={totalToday}
+            limit={profile.dailyLimit}
+          />
+          <h2 className={`text-5xl font-black mt-4 ${statusColor}`}>
             {totalToday.toFixed(1)}g
           </h2>
         </BentoItem>
 
-        {/* STREAK */}
+     
         <BentoItem className="text-center">
-          <Flame className="mx-auto text-yellow-400" />
-          <h3 className="text-xl font-bold">{streak} Days</h3>
+          <Flame className="mx-auto text-yellow-400 mb-2" />
+          <h3 className="font-bold text-xl">{streak} Days</h3>
           <p className="text-xs text-zinc-500">Streak</p>
         </BentoItem>
 
-        {/* HEATMAP */}
+       
         <BentoItem>
           <SugarHeatmap userId={profile.anonymousID} />
         </BentoItem>
 
-        {/* QUICK ACTIONS */}
+       
         <BentoItem className="md:col-span-2">
-          <h3 className="text-xs mb-3 text-zinc-500">Quick Add</h3>
+          <h3 className="font-bold text-yellow-400 mb-2">
+            {insight.text}
+          </h3>
 
-          <div className="grid grid-cols-3 gap-3">
-            {quickActions.map((a) => (
+          <button
+            onClick={() => setShowInsight(!showInsight)}
+            className="text-xs text-zinc-400"
+          >
+            View insight
+          </button>
+
+          {showInsight && (
+            <p className="text-sm text-zinc-400 mt-2">
+              {insight.why}
+            </p>
+          )}
+        </BentoItem>
+
+     
+        <BentoItem className="md:col-span-2">
+          <h3 className="text-xs text-zinc-500 mb-3">
+            Instant Log
+          </h3>
+
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((action) => (
               <button
-                key={a.label}
-                onClick={() => handleQuickAdd(a)}
+                key={action.label}
+                onClick={() => handleQuickAdd(action)}
                 className="p-4 bg-white/5 rounded-xl"
               >
-                {a.icon}
-                <p className="text-sm font-bold mt-2">{a.label}</p>
+                {action.icon}
+                <p className="text-sm font-bold mt-2">
+                  {action.label}
+                </p>
+                <span className="text-xs text-zinc-500">
+                  {action.grams}g
+                </span>
               </button>
             ))}
           </div>
+        </BentoItem>
+
+        {/* CHART */}
+        <BentoItem className="md:col-span-2">
+          <ResponsiveContainer width="100%" height={150}>
+            <AreaChart data={chartData}>
+              <Area dataKey="grams" stroke="#10b981" />
+            </AreaChart>
+          </ResponsiveContainer>
         </BentoItem>
 
         {/* TIMELINE */}
@@ -104,7 +164,9 @@ const App = () => {
           <h3 className="font-bold mb-4">Timeline</h3>
 
           {history.length === 0 ? (
-            <p className="text-zinc-500 text-sm">No logs yet</p>
+            <p className="text-zinc-500 text-sm">
+              No logs yet
+            </p>
           ) : (
             history.map((entry) => (
               <div
@@ -114,13 +176,17 @@ const App = () => {
                 <div>
                   <p className="font-bold">{entry.foodName}</p>
                   <p className="text-xs text-zinc-500">
-                    {new Date(entry.timestamp).toLocaleTimeString()}
+                    {new Date(
+                      entry.timestamp
+                    ).toLocaleTimeString()}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <span>{entry.sugarGrams}g</span>
-                  <button onClick={() => removeEntry(entry.id)}>
+                  <button
+                    onClick={() => removeEntry(entry.id)}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
