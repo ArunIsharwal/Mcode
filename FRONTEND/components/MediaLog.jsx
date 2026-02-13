@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Mic, Camera, Upload, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { analyzeImageWithGemini, estimateSugarContent } from '../services/geminiService';
 
 const MediaLog = ({ onLog }) => {
     const [isListening, setIsListening] = useState(false);
@@ -43,41 +44,40 @@ const MediaLog = ({ onLog }) => {
 
     const analyzeImage = async (file) => {
         setProcessing(true);
-        // Mock AI Analysis
-        setTimeout(() => {
-            const mockResult = {
-                foodName: "Chocolate Donut",
-                sugarGrams: 25,
-                calories: 350,
-                grade: "D-"
-            };
-            setProcessing(false);
-            onLog({ ...mockResult, method: 'Image' });
-            setFeedback(`Identified: ${mockResult.foodName} (${mockResult.sugarGrams}g Sugar)`);
+        try {
+            const result = await analyzeImageWithGemini(file);
+            if (result) {
+                onLog({ ...result, method: 'Image' });
+                setFeedback(`Identified: ${result.foodName} (${result.sugarGrams}g Sugar)`);
+                setTimeout(() => setFeedback(null), 3000);
+            } else {
+                setFeedback("Could not identify food. Please try again.");
+                setTimeout(() => setFeedback(null), 3000);
+            }
+        } catch (e) {
+            setFeedback("Analysis failed.");
             setTimeout(() => setFeedback(null), 3000);
-        }, 1500);
+        }
+        setProcessing(false);
     };
 
-    const processLog = (text, method) => {
+    const processLog = async (text, method) => {
         setProcessing(true);
-        // Mock parsing
-        setTimeout(() => {
-            // Simple regex to find number + g
-            const match = text.match(/(\d+)\s*g/i);
-            const grams = match ? parseInt(match[1]) : 15; // Default to 15 if not found
-            const food = text.replace(/(\d+)\s*g/i, '').trim() || "Unknown Item";
-
-            const log = {
-                foodName: food,
-                sugarGrams: grams,
-                method: method
-            };
-
-            setProcessing(false);
-            onLog(log);
-            setFeedback(`Logged: ${food} (${grams}g)`);
+        try {
+            const result = await estimateSugarContent(text);
+            if (result) {
+                onLog({ ...result, method: method });
+                setFeedback(`Logged: ${result.foodName} (${result.sugarGrams}g)`);
+                setTimeout(() => setFeedback(null), 3000);
+            } else {
+                setFeedback("Could not understand log. Try 'I ate a cookie'.");
+                setTimeout(() => setFeedback(null), 3000);
+            }
+        } catch (e) {
+            setFeedback("Processing failed.");
             setTimeout(() => setFeedback(null), 3000);
-        }, 800);
+        }
+        setProcessing(false);
     };
 
     return (
