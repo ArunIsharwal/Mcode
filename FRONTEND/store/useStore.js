@@ -81,7 +81,7 @@ export const useStore = create(
                     totalToday: 0,
                     streak: 0
                 });
-                localStorage.removeItem('sugar_warrior_storage'); // Clear persisted state
+                localStorage.removeItem('sugar_warrior_storage'); 
             },
 
             setProfile: async (updates) => {
@@ -93,7 +93,10 @@ export const useStore = create(
                     newProfile.bmi = get()._calcBMI(newProfile.weight, newProfile.height);
                 }
 
-                // Optimistic UI Update
+                
+
+
+
                 set({ profile: newProfile });
 
                 try {
@@ -133,7 +136,9 @@ export const useStore = create(
                     return { history: newHistory, totalToday: total };
                 });
 
-                // Backend Sync
+               
+
+
                 const { profile } = get();
                 if (profile.mongoId) {
                     try {
@@ -201,8 +206,9 @@ export const useStore = create(
 
             resetProgress: () => set({ history: [], totalToday: 0, streak: 0 })
         }),
+
         {
-            name: 'sugar-warrior-storage', // name of the item in storage
+            name: 'sugar-warrior-storage', 
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({ profile: state.profile }), 
         }
