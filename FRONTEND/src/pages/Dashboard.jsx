@@ -5,54 +5,48 @@ import { Onboarding } from '../components/Onboarding';
 import { BentoGrid, BentoItem } from '../components/BentoGrid';
 import { SugarEntry } from '../components/SugarEntry';
 import { SugarShield } from '../components/SugarShield';
+import { Leaderboard } from '../components/Leaderboard';
 import SugarHeatmap from '../components/SugarHeatmap';
-import GlobalPulse from '../components/GlobalPulse';
 import { generateInsight } from '../services/insightService';
 import {
     Activity, Flame, History, Trophy, Zap, Trash2, Droplet,
-    Coffee, Cookie, Apple, ChevronDown, ChevronUp, Sparkles, Wind, X
+    Coffee, Cookie, Apple, ChevronDown, ChevronUp, Sparkles, Wind, X, Target
 } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, YAxis, XAxis } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
-    const { profile, history, totalToday, streak, removeEntry, addEntry, initializeData, notification, clearNotification } = useStore();
+    const { profile, history, totalToday, streak, removeEntry, addEntry, initializeData, notification, getXPStats, leaderboard } = useStore();
     const [mounted, setMounted] = useState(false);
-
-    
     const [timerActive, setTimerActive] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(600); 
+    const [timeLeft, setTimeLeft] = useState(600);
 
     useEffect(() => {
         let interval;
         if (timerActive && timeLeft > 0) {
             interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
         } else if (timerActive && timeLeft === 0) {
-            completeAction('Walk');
+            completeAction('Walk', true);
         }
         return () => clearInterval(interval);
     }, [timerActive, timeLeft]);
 
-    const completeAction = (type) => {
+    const completeAction = (type, isRec = false) => {
         addEntry({
             id: Math.random().toString(36).substr(2, 9),
             timestamp: Date.now(),
             foodName: type === 'Walk' ? '10-min Walk' : type,
             sugarGrams: 0,
-            calories: 0,
-            category: 'exercise', 
-            method: 'Auto-Log'
+            category: 'exercise',
+            method: 'Auto-Log',
+            isRecommendation: isRec
         });
         setTimerActive(false);
         setTimeLeft(600);
     };
 
     const handleRecommendationClick = (rec) => {
-        if (rec.type === 'activity') {
-            setTimerActive(true);
-        } else {
-          
-            completeAction(rec.action);
-        }
+        if (rec.type === 'activity') setTimerActive(true);
+        else completeAction(rec.action, true);
     };
 
     useEffect(() => {
@@ -62,17 +56,18 @@ const Dashboard = () => {
 
     if (!mounted) return null;
 
-    const percentage = Math.min((totalToday / profile.dailyLimit) * 100, 100);
+    const { xpToday, xpMonth } = getXPStats ? getXPStats() : { xpToday: 0, xpMonth: 0 };
+    const percentage = Math.min((totalToday / (profile.dailyLimit || 30)) * 100, 100) || 0;
     const statusColor = percentage > 90 ? '#ef4444' : percentage > 70 ? '#fb923c' : '#10b981';
     const statusColorTailwind = percentage > 90 ? 'text-red-500' : percentage > 70 ? 'text-orange-400' : 'text-emerald-400';
 
     const insight = generateInsight(profile, history);
 
     const quickActions = [
-        { label: 'Soda', grams: 39, calories: 150, icon: <Droplet className="w-5 h-5" />, color: 'text-blue-400', bg: 'bg-blue-400/10', category: 'soda' },
-        { label: 'Coffee', grams: 5, calories: 30, icon: <Coffee className="w-5 h-5" />, color: 'text-amber-600', bg: 'bg-amber-600/10', category: 'coffee' },
-        { label: 'Snack', grams: 12, calories: 120, icon: <Cookie className="w-5 h-5" />, color: 'text-orange-400', bg: 'bg-orange-400/10', category: 'snack' },
-        { label: 'Fruit', grams: 15, calories: 60, icon: <Apple className="w-5 h-5" />, color: 'text-red-400', bg: 'bg-red-400/10', category: 'fruit' },
+        { label: 'Soda', grams: 39, icon: <Droplet className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { label: 'Coffee', grams: 5, icon: <Coffee className="w-4 h-4" />, color: 'text-amber-600', bg: 'bg-amber-600/10' },
+        { label: 'Snack', grams: 12, icon: <Cookie className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+        { label: 'Fruit', grams: 15, icon: <Apple className="w-4 h-4" />, color: 'text-red-400', bg: 'bg-red-400/10' },
     ];
 
     const chartData = [...history].slice(0, 8).reverse().map(e => ({
@@ -81,228 +76,191 @@ const Dashboard = () => {
     }));
 
     return (
-        <div className="pb-44 pt-6 px-4 max-w-6xl mx-auto space-y-6">
+        <div className="pb-44 pt-4 px-4 max-w-7xl mx-auto space-y-6 selection:bg-emerald-500/30">
             <AnimatePresence>
                 {!profile.onboarded && <Onboarding />}
             </AnimatePresence>
 
+            
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-[24px] backdrop-blur-md">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
+                        <Activity className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                        <h1 className="text-sm font-black tracking-widest text-zinc-500 uppercase">System Status: <span className="text-white">Active</span></h1>
+                        <div className="flex gap-3 text-[10px] font-bold text-zinc-500 mt-0.5">
+                            <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-blue-400" /> {xpToday} XP TODAY</span>
+                            <span className="flex items-center gap-1"><Target className="w-3 h-3 text-purple-400" /> {profile.points || 0} TOTAL</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
+                    <History className="w-4 h-4 text-zinc-600" />
+                    <span className="text-[10px] font-black text-zinc-400 tracking-tighter uppercase">{profile.name || 'GUEST'}</span>
+                </div>
+            </header>
+
             <BentoGrid>
-                
-                <BentoItem className="md:col-span-3 flex flex-col md:flex-row items-center justify-between p-8 bg-zinc-900/20 border-white/10 overflow-hidden relative">
-                    <div className="flex items-center gap-10">
-                       
-                        <div className="w-40 h-40 relative">
-                            <SugarShield total={totalToday} limit={profile.dailyLimit} color={statusColor} />
-                            <div className="absolute inset-0 rounded-full blur-[40px] opacity-20 -z-10" style={{ backgroundColor: statusColor }} />
-                        </div>
+            
+                <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                        {/* Primary Stat */}
-                        <div>
-                            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Current Saturation</p>
-                            <motion.h2 key={totalToday} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className={`text-6xl font-black ${statusColorTailwind} tracking-tighter`}>
-                                {totalToday.toFixed(1)}<span className="text-2xl ml-1 text-zinc-600">g</span>
-                            </motion.h2>
-                            <div className="mt-4 flex items-center gap-2">
-                                <div className="h-1.5 w-32 bg-white/5 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${percentage}%` }}
-                                        className="h-full"
-                                        style={{ backgroundColor: statusColor }}
-                                    />
+                    
+                    <BentoItem className="md:col-span-2 p-8 bg-gradient-to-br from-zinc-900/40 to-black/20 relative overflow-hidden group">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                            <div className="w-44 h-44 relative shrink-0">
+                                <SugarShield total={totalToday} limit={profile.dailyLimit} color={statusColor} />
+                                <div className="absolute inset-0 rounded-full blur-[50px] opacity-10 -z-10" style={{ backgroundColor: statusColor }} />
+                            </div>
+
+                            <div className="flex-1 text-center md:text-left">
+                                <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Metabolic Saturation</p>
+                                <motion.h2 key={totalToday} className={`text-6xl font-black ${statusColorTailwind} tracking-tighter`}>
+                                    {totalToday.toFixed(1)}<span className="text-2xl ml-1 text-zinc-600 font-bold uppercase">g</span>
+                                </motion.h2>
+                                <div className="mt-4 flex items-center gap-3">
+                                    <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div initial={{ width: 0 }} animate={{ width: `${percentage}%` }} className="h-full" style={{ backgroundColor: statusColor }} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-zinc-500">{percentage.toFixed(0)}%</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-zinc-500">{percentage.toFixed(0)}%</span>
+                            </div>
+
+                            <div className="flex flex-col items-center md:items-end gap-2 border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8">
+                                <div className="p-3 bg-yellow-400/10 rounded-2xl border border-yellow-400/20">
+                                    <Flame className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                                </div>
+                                <span className="text-3xl font-black text-white">{streak}</span>
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Day Streak</span>
                             </div>
                         </div>
-                    </div>
+                    </BentoItem>
 
-                    {/* Streak - Integrated & Balanced */}
-                    <div className="mt-8 md:mt-0 flex flex-col items-center md:items-end md:pl-10 md:border-l border-white/5">
-                        <div className="flex items-center gap-3 bg-yellow-400/10 px-4 py-2 rounded-2xl border border-yellow-400/20">
-                            <Flame className="w-5 h-5 text-yellow-500" fill="currentColor" />
-                            <span className="text-2xl font-black text-white">{streak}</span>
-                        </div>
-                        <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mt-2 text-right">Day Consistency</p>
+                   
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                       
+                        <BentoItem className="md:col-span-2 p-6 bg-zinc-950/40 border-l-4 border-l-emerald-500">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-emerald-500/10 rounded-xl"><Wind className="w-5 h-5 text-emerald-500" /></div>
+                                <div className="flex-1">
+                                    <h3 className="text-md font-black text-white leading-tight mb-1">{insight.text}</h3>
+                                    <p className="text-xs text-zinc-500 font-medium leading-relaxed mb-4">{insight.why}</p>
 
-                        {/* Updated Points Display */}
-                        <div className="mt-4 flex items-center gap-2">
-                            <span className="text-xl font-black text-purple-400">{profile.points || 0}</span>
-                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">XP Earned</span>
-                        </div>
-                    </div>
-                </BentoItem>
-
-                {/* --- GAMIFICATION TOAST --- */}
-                <AnimatePresence>
-                    {notification && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -50, x: '-50%' }}
-                            animate={{ opacity: 1, y: 0, x: '-50%' }}
-                            exit={{ opacity: 0, y: -50, x: '-50%' }}
-                            className="fixed top-20 left-1/2 z-50 bg-zinc-900/90 backdrop-blur-md border border-yellow-400/30 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4"
-                        >
-                            <div className="bg-yellow-400/20 p-2 rounded-full">
-                                <Trophy className="w-6 h-6 text-yellow-400" />
+                                    {insight.recommendation && (
+                                        <div className="bg-blue-500/5 border border-blue-500/10 p-3 rounded-xl flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-blue-400" />
+                                                <span className="text-[10px] font-bold text-white uppercase">{insight.recommendation.action}</span>
+                                            </div>
+                                            <button onClick={() => handleRecommendationClick(insight.recommendation)} className="text-[9px] font-black bg-blue-500 px-3 py-1.5 rounded-lg text-white hover:bg-blue-400 transition-colors">START</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-black text-white">+{notification.points} XP</h3>
-                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">{notification.messages.join(' • ')}</p>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </BentoItem>
 
-                {/* --- 2. QUICK LOGGING --- */}
-                <BentoItem className="md:col-span-1 p-6 flex flex-col justify-center">
-                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Express Log</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {quickActions.map((action) => (
-                            <motion.button
-                                key={action.label}
-                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.05)' }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => addEntry({ ...action, id: Math.random().toString(36).substr(2, 9), timestamp: Date.now(), foodName: action.label, sugarGrams: action.grams, calories: action.calories, method: 'Manual' })}
-                                className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/[0.03] border border-white/5 transition-all"
-                            >
-                                <div className={`${action.color}`}>{action.icon}</div>
-                                <span className="text-[9px] font-black text-zinc-400 uppercase">{action.label}</span>
-                            </motion.button>
-                        ))}
+                      
+                        <BentoItem className="p-6">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Express</h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                {quickActions.map((action) => (
+                                    <button key={action.label} onClick={() => addEntry({
+                                        id: Math.random().toString(36).substr(2, 9),
+                                        timestamp: Date.now(),
+                                        foodName: action.label,
+                                        sugarGrams: action.grams,
+                                        method: 'Manual'
+                                    })} className="flex flex-col items-center p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/5 transition-all group">
+                                        <div className={`${action.color} group-hover:scale-110 transition-transform`}>{action.icon}</div>
+                                        <span className="text-[8px] font-black text-zinc-500 mt-1 uppercase">{action.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </BentoItem>
                     </div>
-                </BentoItem>
+
+                    
+                    <BentoItem className="md:col-span-1 p-6 h-[400px] flex flex-col">
+                        <div className="flex items-center gap-2 mb-6"><History className="w-4 h-4 text-zinc-500" /><h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Logs</h3></div>
+                        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1">
+                            {history.map(entry => (
+                                <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                                    <div className="text-[10px] font-black text-white">{entry.foodName}</div>
+                                    <div className="text-[10px] font-bold text-emerald-500">{entry.sugarGrams}g</div>
+                                </div>
+                            ))}
+                        </div>
+                    </BentoItem>
+
+                    <BentoItem className="md:col-span-1 p-6 h-[400px]">
+                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-6">Metabolic Flow</h3>
+                        <div className="w-full h-full pb-10">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <Area type="stepAfter" dataKey="grams" stroke={statusColor} strokeWidth={2} fillOpacity={0.05} fill={statusColor} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </BentoItem>
+                </div>
 
                 
-                <BentoItem className="md:col-span-2 p-8 bg-zinc-950/40 relative overflow-hidden">
-                    <div className="flex items-start gap-6 z-10 relative">
-                        <div className="p-4 bg-emerald-500/10 rounded-2xl">
-                            <Wind className="w-6 h-6 text-emerald-400" />
-                        </div>
-                        <div className="space-y-2 flex-1">
-                            <h3 className="text-lg font-black text-white leading-tight">{insight.text}</h3>
-                            <p className="text-sm text-zinc-500 font-medium leading-relaxed">{insight.why}</p>
+                <div className="md:col-span-4 flex flex-col gap-6">
+                    <BentoItem className="flex-1 min-h-[600px] bg-zinc-950/20 border-white/5 p-2">
+                        <Leaderboard />
+                    </BentoItem>
 
-                            {/* Corrective Action Suggestion */}
-                            {insight.recommendation && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
-                                            {insight.recommendation.icon === 'Walk' && <Activity className="w-5 h-5" />}
-                                            {insight.recommendation.icon === 'Droplet' && <Droplet className="w-5 h-5" />}
-                                            {insight.recommendation.icon === 'Cookie' && <Cookie className="w-5 h-5" />}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-blue-400 font-black uppercase tracking-wider">Recommended Action</p>
-                                            <p className="text-white font-bold">{insight.recommendation.action}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleRecommendationClick(insight.recommendation)}
-                                        className="px-4 py-2 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition-colors"
-                                    >
-                                        Do it
-                                    </button>
-                                </motion.div>
-                            )}
-                        </div>
-                    </div>
-                </BentoItem>
-
-                {/* --- 4. ACTIVITY TIMELINE --- */}
-                <BentoItem className="md:col-span-2 p-8">
-                    <div className="flex items-center justify-between mb-8">
+                    <BentoItem className="p-6 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
                         <div className="flex items-center gap-3">
-                            <History className="w-4 h-4 text-zinc-500" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-white">Live Encounters</h3>
+                            <Trophy className="w-6 h-6 text-purple-400" />
+                            <div>
+                                <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Global Rank</p>
+                                <p className="text-xl font-black text-white italic">
+                                    {leaderboard.findIndex(u => u._id === profile.mongoId) !== -1
+                                        ? `#${leaderboard.findIndex(u => u._id === profile.mongoId) + 1}`
+                                        : (leaderboard.length > 0 ? '> #10' : '#--')}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                        <AnimatePresence mode="popLayout">
-                            {history.map((entry) => (
-                                <motion.div key={entry.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 group transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-white/5 text-[10px] font-black uppercase text-zinc-500">
-                                            {entry.category?.substring(0, 2) || '??'}
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-sm text-white">{entry.foodName}</p>
-                                            <p className="text-[9px] text-zinc-500 font-bold">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <p className="font-black text-md text-white">{entry.sugarGrams}g</p>
-                                        <button onClick={() => removeEntry(entry.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                </BentoItem>
+                    </BentoItem>
+                </div>
 
-                {/* --- 5. INTAKE FLOW CHART --- */}
-                <BentoItem className="md:col-span-2 p-8 overflow-hidden">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Metabolic Flow</h3>
-                        <Trophy className="w-4 h-4 text-white/10" />
-                    </div>
-                    <div className="w-full h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData}>
-                                <Area type="stepAfter" dataKey="grams" stroke={statusColor} strokeWidth={3} fillOpacity={0.1} fill={statusColor} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </BentoItem>
-
-                {/* --- 6. HEATMAP (FOOTER OF DASHBOARD) --- */}
-                <BentoItem className="md:col-span-4 p-8 bg-black/40 border-t border-white/5">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="shrink-0">
+                
+                <BentoItem className="md:col-span-12 p-8 bg-black/40">
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                        <div className="shrink-0 text-center md:text-left">
                             <h3 className="text-sm font-black text-white uppercase tracking-widest">History Map</h3>
-                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight mt-1">Yearly Frequency Analysis</p>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">Yearly Frequency</p>
                         </div>
-                        <div className="w-full overflow-x-auto pb-2">
-                            <SugarHeatmap userId={profile.mongoId} />
-                        </div>
+                        <div className="w-full overflow-x-auto pb-2"><SugarHeatmap userId={profile.mongoId} /></div>
                     </div>
                 </BentoItem>
             </BentoGrid>
 
-            <SugarEntry />
-            <GlobalPulse />
+          
+            <AnimatePresence>
+                {notification && (
+                    <motion.div initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-zinc-900 border-2 border-yellow-400/50 p-6 rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex items-center gap-6">
+                        <div className="bg-yellow-400 p-3 rounded-2xl shadow-[0_0_20px_rgba(250,204,21,0.4)]"><Trophy className="w-8 h-8 text-black" /></div>
+                        <div>
+                            <h4 className="text-2xl font-black text-white">+{notification.points} XP</h4>
+                            <p className="text-xs text-yellow-400 font-black uppercase tracking-widest">{notification.messages[0]}</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Timer Overlay */}
+            
+            <SugarEntry />
+
             <AnimatePresence>
                 {timerActive && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
-                    >
-                        <div className="absolute top-10 right-10">
-                            <button onClick={() => setTimerActive(false)} className="p-4 bg-white/10 rounded-full hover:bg-white/20 transition-all">
-                                <X className="w-6 h-6 text-white" />
-                            </button>
-                        </div>
-
-                        <Trophy className="w-20 h-20 text-yellow-400 mb-8 animate-bounce" />
-                        <h2 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase tracking-tighter">Crushing the Spike</h2>
-                        <p className="text-zinc-400 font-medium mb-12 text-lg">Walk it off! Keep moving.</p>
-
-                        <div className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-600 tabular-nums tracking-tighter mb-12">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6">
+                        <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-9xl font-black text-white tabular-nums tracking-tighter mb-12">
                             {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-                        </div>
-
-                        <button
-                            onClick={() => completeAction('Walk')}
-                            className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xl rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(16,185,129,0.3)]"
-                        >
-                            I'm Done! (Claim XP)
-                        </button>
+                        </motion.div>
+                        <h2 className="text-2xl font-black text-emerald-400 uppercase tracking-[0.5em] mb-8">Burn Mode Active</h2>
+                        <button onClick={() => completeAction('Walk', true)} className="px-12 py-5 bg-emerald-500 text-black font-black text-xl rounded-full hover:scale-105 transition-all">CLAIM XP</button>
                     </motion.div>
                 )}
             </AnimatePresence>
