@@ -81,7 +81,7 @@ export const useStore = create(
                     totalToday: 0,
                     streak: 0
                 });
-                localStorage.removeItem('sugar_warrior_storage'); 
+                localStorage.removeItem('sugar_warrior_storage'); // Clear persisted state
             },
 
             setProfile: async (updates) => {
@@ -93,10 +93,7 @@ export const useStore = create(
                     newProfile.bmi = get()._calcBMI(newProfile.weight, newProfile.height);
                 }
 
-                
-
-
-
+                // Optimistic UI Update
                 set({ profile: newProfile });
 
                 try {
@@ -126,7 +123,7 @@ export const useStore = create(
             },
 
             addEntry: async (entry) => {
-                
+                // Optimistic Update
                 const today = new Date().setHours(0, 0, 0, 0);
                 set((state) => {
                     const newHistory = [entry, ...state.history];
@@ -136,9 +133,7 @@ export const useStore = create(
                     return { history: newHistory, totalToday: total };
                 });
 
-               
-
-
+                // Backend Sync
                 const { profile } = get();
                 if (profile.mongoId) {
                     try {
@@ -147,7 +142,7 @@ export const useStore = create(
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userId: profile.mongoId,
-                                foodName: entry.foodName,
+                                foodName: entry.foodName, // Match backend expectation (it maps this to itemName)
                                 sugarGrams: entry.sugarGrams,
                                 calories: entry.calories,
                                 category: entry.category,
@@ -196,9 +191,9 @@ export const useStore = create(
 
                         set({ profile: { ...profile, ...user, mongoId: user._id }, history: mappedEvents, totalToday: total });
                     } else if (userRes.status === 404) {
-                       
+                        // Self-healing: Backend doesn't know this user (likely deleted). Reset local state.
                         console.warn("User ID invalid (404). Resetting profile.");
-                        get().logout(); 
+                        get().logout(); // Use logout to reset
                     }
                 } catch (e) { console.error("Init Error", e); }
                 finally { set({ loading: false }); }
@@ -206,11 +201,10 @@ export const useStore = create(
 
             resetProgress: () => set({ history: [], totalToday: 0, streak: 0 })
         }),
-
         {
-            name: 'sugar-warrior-storage', 
+            name: 'sugar-warrior-storage', // name of the item in storage
             storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({ profile: state.profile }), 
+            partialize: (state) => ({ profile: state.profile }), // Only persist the profile/ID
         }
     )
 );
