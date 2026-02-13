@@ -8,8 +8,10 @@ const sugarEventSchema = new mongoose.Schema({
     sugarGrams: { type: Number, required: true },
     calories: { type: Number },
     category: { type: String },
-    method: { type: String, enum: ['Voice', 'Image', 'Manual'], required: true },
-    correctiveActionCompleted: { type: Boolean, default: false }
+    method: { type: String, enum: ['Voice', 'Image', 'Manual', 'Auto-Log'], required: true },
+    correctiveActionCompleted: { type: Boolean, default: false },
+    pointsEarned: { type: Number, default: 0 },
+    isRecommendation: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model('SugarEvent', sugarEventSchema);

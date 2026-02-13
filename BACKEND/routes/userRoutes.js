@@ -1,15 +1,76 @@
 
 import express from 'express';
 import User from '../models/User.js';
+import SugarEvent from '../models/SugarEvent.js';
 
 const router = express.Router();
+
+// Get Leaderboard (Daily/Monthly)
+router.get('/leaderboard', async (req, res) => {
+    try {
+        const { timeframe } = req.query;
+        const now = new Date();
+        let startDate = new Date();
+
+        if (timeframe === 'monthly') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else {
+           
+            startDate.setHours(0, 0, 0, 0);
+        }
+
+        const leaderboard = await SugarEvent.aggregate([
+            {
+                $match: {
+                    timestamp: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: '$userId',
+                    totalXP: { $sum: '$pointsEarned' }
+                }
+            },
+            {
+                $sort: { totalXP: -1 }
+            },
+            {
+                $limit: 10
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            },
+            {
+                $unwind: '$user'
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: '$user.username',
+                    name: '$user.name',
+                    avatar: '$user.avatar',
+                    xp: '$totalXP'
+                }
+            }
+        ]);
+
+        res.json(leaderboard);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 // Create a new user (Register)
 router.post('/', async (req, res) => {
     try {
         const { anonymousID, username, age, bmi, name, gender, height, weight, dailyLimit, avatar, activity, onboarded } = req.body;
 
-        // Check if username exists
+       
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: 'Username already taken' });
@@ -25,7 +86,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Login by Username
+
 router.post('/login', async (req, res) => {
     try {
         const { username } = req.body;
@@ -39,14 +100,14 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Update user profile
+
 router.put('/:anonymousID', async (req, res) => {
     try {
         const updates = req.body;
         const user = await User.findOneAndUpdate(
             { anonymousID: req.params.anonymousID },
             { $set: updates },
-            { new: true } // Return updated document
+            { new: true } 
         );
         if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user);
@@ -55,7 +116,7 @@ router.put('/:anonymousID', async (req, res) => {
     }
 });
 
-
+// Get user by AnonymousID
 router.get('/:anonymousID', async (req, res) => {
     try {
         const user = await User.findOne({ anonymousID: req.params.anonymousID });
