@@ -5,6 +5,28 @@ const apiKey = process.env.API_KEY || "";
 
 const ai = new GoogleGenAI({ apiKey });
 
+
+
+export const analyzeImageWithGemini = async (file) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            console.log("Mock Analysis: Returning simulated result for", file.name);
+            resolve({
+                foodName: "Detected Food Item",
+                sugarGrams: 15,
+                calories: 250,
+                grade: "C",
+                metric: "valid",
+                
+                isMock: true
+            });
+        }, 1500); 
+    });
+};
+
+
+
+
 export const estimateSugarContent = async (input) => {
     try {
         if (!apiKey) {
