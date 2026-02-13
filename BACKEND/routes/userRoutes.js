@@ -55,7 +55,7 @@ router.put('/:anonymousID', async (req, res) => {
     }
 });
 
-// Get user by AnonymousID
+
 router.get('/:anonymousID', async (req, res) => {
     try {
         const user = await User.findOne({ anonymousID: req.params.anonymousID });
