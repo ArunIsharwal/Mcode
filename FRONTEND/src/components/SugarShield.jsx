@@ -11,7 +11,7 @@ export const SugarShield = ({ total, limit, color }) => {
     return (
         <div className="relative flex items-center justify-center w-full aspect-square">
             <svg className="w-full h-full transform -rotate-90">
-                {/* Background track */}
+               
                 <circle
                     cx="50%"
                     cy="50%"
@@ -21,7 +21,7 @@ export const SugarShield = ({ total, limit, color }) => {
                     strokeWidth="12"
                     className="text-white/5"
                 />
-                {/* Progress stroke */}
+                
                 <motion.circle
                     cx="50%"
                     cy="50%"

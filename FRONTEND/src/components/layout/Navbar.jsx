@@ -23,8 +23,8 @@ const Navbar = () => {
             className="sticky top-0 z-50 w-full px-4 py-6"
         >
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 p-3 rounded-[32px] bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300">
+
                 
-                {/* Profile Section */}
                 <div className="flex items-center gap-4 pl-2">
                     <Link to="/">
                         <motion.div
@@ -38,7 +38,7 @@ const Navbar = () => {
                             </div>
                         </motion.div>
                     </Link>
-                    
+
                     <div className="flex flex-col">
                         <Link to="/" className="group">
                             <h1 className="text-lg font-black tracking-tighter uppercase leading-none text-white group-hover:text-emerald-400 transition-colors">
@@ -50,21 +50,20 @@ const Navbar = () => {
                                 {profile.name || 'Guest'}
                             </span>
                             <span className="text-[10px] text-emerald-400 font-black tracking-widest">
-                                {profile.xp || 0} XP
+                                {profile.points || 0} XP
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Navigation Links */}
+                
                 <div className="flex items-center p-1.5 bg-zinc-950/40 rounded-full border border-white/5 shadow-inner">
                     {navLinks.map((link) => (
                         <Link
                             key={link.path}
                             to={link.path}
-                            className={`relative px-6 py-2.5 rounded-full text-xs font-black tracking-widest transition-all duration-300 ${
-                                isActive(link.path) ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
+                            className={`relative px-6 py-2.5 rounded-full text-xs font-black tracking-widest transition-all duration-300 ${isActive(link.path) ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                                }`}
                         >
                             {isActive(link.path) && (
                                 <motion.div

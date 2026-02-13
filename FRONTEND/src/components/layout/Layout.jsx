@@ -5,15 +5,55 @@ import Footer from './Footer';
 
 const Layout = () => {
     return (
-        <div className="min-h-screen bg-[#060608] text-zinc-100 font-sans selection:bg-emerald-500/30 flex flex-col">
-            {/* Immersive Blur Backgrounds - Moved here to be global */}
-            <div className="fixed top-[-15%] right-[-15%] w-[60%] h-[60%] bg-emerald-500/5 blur-[150px] pointer-events-none -z-10 animate-pulse" />
-            <div className="fixed bottom-[-15%] left-[-15%] w-[60%] h-[60%] bg-purple-500/5 blur-[150px] pointer-events-none -z-10 animate-pulse" style={{ animationDelay: '1.5s' }} />
+        <div className="min-h-screen bg-[#060608] text-zinc-100 font-sans selection:bg-emerald-500/30 flex flex-col relative overflow-x-hidden">
+            
+            
+            <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+             
+                <div 
+                    className="absolute top-[-10%] right-[-10%] w-[70%] h-[70%] bg-emerald-500/[0.07] blur-[120px] rounded-full animate-pulse" 
+                    style={{ animationDuration: '8s' }} 
+                />
+                
+              
+                <div 
+                    className="absolute bottom-[-10%] left-[-10%] w-[70%] h-[70%] bg-purple-500/[0.07] blur-[120px] rounded-full animate-pulse" 
+                    style={{ animationDelay: '2s', animationDuration: '10s' }} 
+                />
 
+              
+                <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay" 
+                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
+                </div>
+            </div>
+
+            
+            <style dangerouslySetInnerHTML={{ __html: `
+                ::-webkit-scrollbar {
+                    width: 6px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: #060608;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: #27272a;
+                    border-radius: 10px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #3f3f46;
+                }
+            `}} />
+
+            
             <Navbar />
-            <main className="flex-grow">
-                <Outlet />
+            
+            <main className="flex-grow relative z-10">
+                
+                <div className="max-w-6xl mx-auto w-full">
+                    <Outlet />
+                </div>
             </main>
+
             <Footer />
         </div>
     );

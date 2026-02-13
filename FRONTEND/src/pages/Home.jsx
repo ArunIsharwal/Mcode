@@ -18,14 +18,14 @@ const Home = () => {
 
     return (
         <div className="relative overflow-hidden bg-[#060608] text-zinc-100">
-            
+          
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-4 pt-10 pb-20 space-y-32 relative z-10">
 
                
                 <section className="flex flex-col items-center text-center py-24 md:py-40 relative">
-                 
+                
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none" />
 
                     <motion.div
@@ -91,7 +91,7 @@ const Home = () => {
                     </motion.div>
                 </section>
 
-              
+                
                 <section className="grid md:grid-cols-2 gap-20 items-center">
                     <motion.div {...fadeInUp} className="order-2 md:order-1 relative group">
                         <div className="absolute -inset-4 bg-red-500/10 blur-3xl rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -101,7 +101,7 @@ const Home = () => {
                                 <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Active Spike</span>
                             </div>
 
-                            
+                          
 
                             <TrendingUp className="w-64 h-64 text-red-500/20 absolute -z-10" strokeWidth={0.5} />
                             <motion.div
@@ -193,7 +193,7 @@ const Home = () => {
                     </div>
                 </section>
 
-                {/* 4. OPERATIONAL WORKFLOW */}
+              
                 <section className="bg-gradient-to-br from-zinc-900/40 to-black/60 rounded-[64px] p-12 md:p-24 border border-white/5 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
                         <Activity className="w-[500px] h-[500px] text-emerald-500" strokeWidth={0.5} />
@@ -255,7 +255,7 @@ const Home = () => {
                     </div>
                 </section>
 
-                {/* 5. METRIC BAR */}
+              
                 <section className="py-24 border-y border-white/5 bg-white/[0.01] backdrop-blur-sm -mx-4 px-4 overflow-hidden relative">
                     <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-20 text-center">
                         {[

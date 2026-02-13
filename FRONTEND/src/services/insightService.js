@@ -5,7 +5,7 @@ export const generateInsight = (profile, history) => {
     const todayEntries = history.filter(e => new Date(e.timestamp).toDateString() === now.toDateString());
     const totalGrams = todayEntries.reduce((acc, curr) => acc + curr.sugarGrams, 0);
 
-    // --- Corrective Action Logic ---
+    
     let recommendation = null;
     const percentage = (totalGrams / profile.dailyLimit) * 100;
 
@@ -34,17 +34,17 @@ export const generateInsight = (profile, history) => {
         return list[Math.floor(Math.random() * list.length)];
     };
 
-    // --- Context Awareness & Recency Check ---
+   
     const recentLogs = history.filter(e => {
-        const timeDiff = (now - new Date(e.timestamp)) / 1000 / 60; // minutes
-        return timeDiff < 60; // Look at last hour
+        const timeDiff = (now - new Date(e.timestamp)) / 1000 / 60; 
+        return timeDiff < 60; 
     });
 
     const hasRecentWalk = recentLogs.some(e => e.foodName.toLowerCase().includes('walk') || e.category === 'exercise');
     const hasRecentWater = recentLogs.some(e => e.foodName.toLowerCase().includes('water') || e.category === 'hydration');
     const hasRecentProtein = recentLogs.some(e => e.foodName.toLowerCase().includes('protein') || e.category === 'nutrition');
 
-    // 1. Critical Spike (>100%) -> Immediate Movement
+   
     if (percentage > 100 && !hasRecentWalk) {
         recommendation = {
             action: "10-minute walk",
@@ -53,7 +53,7 @@ export const generateInsight = (profile, history) => {
             reason: `Critical spike! ${getRandomMessage('walk')}`
         };
     }
-    // 2. High Sugar + Low Activity -> Walk
+   
     else if (percentage > 80 && profile.activity.steps < 5000 && !hasRecentWalk) {
         recommendation = {
             action: "10-minute walk",
@@ -62,7 +62,7 @@ export const generateInsight = (profile, history) => {
             reason: `Low activity detected. ${getRandomMessage('walk')}`
         };
     }
-    // 3. High Sugar + Poor Sleep -> Water
+ 
     else if (percentage > 50 && profile.activity.sleepHours < 6 && !hasRecentWater) {
         recommendation = {
             action: "Drink water",
@@ -71,7 +71,7 @@ export const generateInsight = (profile, history) => {
             reason: `Poor sleep detected. ${getRandomMessage('water')}`
         };
     }
-    // 4. Moderate Sugar + Older Age -> Protein
+
     else if (percentage > 60 && profile.age > 45 && !hasRecentProtein) {
         recommendation = {
             action: "Protein snack swap",
@@ -81,7 +81,7 @@ export const generateInsight = (profile, history) => {
         };
     }
 
-    // Default Fallback: If high sugar but 'Walk' already done, suggest Water
+
     if (!recommendation && percentage > 80) {
         if (!hasRecentWalk) {
             recommendation = {

@@ -1,10 +1,4 @@
 
-// MOCK implementation - No API Key needed
-
-/**
- * Simulates analyzing an image with Gemini.
- * Returns a mock response after a short delay.
- */
 export const analyzeImageWithGemini = async (file) => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -15,23 +9,20 @@ export const analyzeImageWithGemini = async (file) => {
                 calories: 250,
                 grade: "C",
                 metric: "valid",
-                // Extra fields for debugging if needed
+               
                 isMock: true
             });
-        }, 1500); // Simulate network delay
+        }, 1500); 
     });
 };
 
-/**
- * Simulates estimating sugar content based on text input.
- * Returns a reasonable guess or default value.
- */
+
 export const estimateSugarContent = async (input) => {
     return new Promise((resolve) => {
         setTimeout(() => {
             console.log("Mock Estimation: Returning simulated result for", input);
 
-            // Simple logic to make the mock feel slightly responsive
+          
             const lowerInput = input.toLowerCase();
             let sugar = 10;
             let cals = 150;
@@ -59,6 +50,6 @@ export const estimateSugarContent = async (input) => {
                 valid: true,
                 isMock: true
             });
-        }, 1000); // Simulate network delay
+        }, 1000);
     });
 };

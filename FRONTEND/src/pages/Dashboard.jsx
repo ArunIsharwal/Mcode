@@ -102,7 +102,7 @@ const Dashboard = () => {
             </header>
 
             <BentoGrid>
-            
+                
                 <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     
@@ -136,9 +136,9 @@ const Dashboard = () => {
                         </div>
                     </BentoItem>
 
-                   
+                    
                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-                       
+                        
                         <BentoItem className="md:col-span-2 p-6 bg-zinc-950/40 border-l-4 border-l-emerald-500">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-emerald-500/10 rounded-xl"><Wind className="w-5 h-5 text-emerald-500" /></div>
@@ -159,7 +159,7 @@ const Dashboard = () => {
                             </div>
                         </BentoItem>
 
-                      
+                        
                         <BentoItem className="p-6">
                             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Express</h3>
                             <div className="grid grid-cols-2 gap-2">
@@ -237,7 +237,7 @@ const Dashboard = () => {
                 </BentoItem>
             </BentoGrid>
 
-          
+           
             <AnimatePresence>
                 {notification && (
                     <motion.div initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-zinc-900 border-2 border-yellow-400/50 p-6 rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex items-center gap-6">

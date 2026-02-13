@@ -8,7 +8,7 @@ export const useStore = create(
         (set, get) => ({
             profile: {
                 name: '',
-                username: '', // Added username
+                username: '',
                 age: 22,
                 gender: '',
                 height: 170,
@@ -19,22 +19,64 @@ export const useStore = create(
                 avatar: '👤',
                 activity: { steps: 4500, sleepHours: 7 },
                 anonymousID: null,
-                anonymousID: null,
                 mongoId: null,
-                points: 0 // Added points
+                points: 0
             },
             history: [],
             totalToday: 0,
-            streak: 3,
-            totalToday: 0,
-            streak: 3,
+            streak: 0,
             loading: false,
-            notification: null, // Global notification for gamification
+            notification: null,
+            leaderboard: [],
 
-            // HELPER: Calculate BMI locally
+         
             _calcBMI: (w, h) => {
                 const heightMeters = h / 100;
                 return parseFloat((w / (heightMeters * heightMeters)).toFixed(1));
+            },
+
+            
+            _recalcDailyStats: () => {
+                const { history } = get();
+                const today = new Date().setHours(0, 0, 0, 0);
+                const total = history
+                    .filter(e => new Date(e.timestamp).setHours(0, 0, 0, 0) === today)
+                    .reduce((acc, curr) => acc + curr.sugarGrams, 0);
+                set({ totalToday: total });
+            },
+
+            
+            getXPStats: () => {
+                const history = get().history;
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+
+              
+                const todayEvents = history.filter(e => new Date(e.timestamp).toDateString() === today.toDateString());
+                const xpToday = todayEvents.reduce((acc, curr) => acc + (curr.pointsEarned || 0), 0);
+
+               
+                const monthEvents = history.filter(e => {
+                    const d = new Date(e.timestamp);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                });
+                const xpMonth = monthEvents.reduce((acc, curr) => acc + (curr.pointsEarned || 0), 0);
+
+                return { xpToday, xpMonth };
+            },
+
+         
+            fetchLeaderboard: async (timeframe = 'daily') => {
+                try {
+                    const res = await fetch(`${API_URL}/api/users/leaderboard?timeframe=${timeframe}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        set({ leaderboard: data });
+                    }
+                } catch (error) {
+                    console.error("Leaderboard Error:", error);
+                }
             },
 
             login: async (username) => {
@@ -48,15 +90,16 @@ export const useStore = create(
 
                     if (res.ok) {
                         const user = await res.json();
-                        // Load user data and history
+                       
                         set(state => ({
                             profile: { ...state.profile, ...user, mongoId: user._id, onboarded: true }
                         }));
-                        await get().initializeData(); // Fetch history
-                        return true; // Login success
+                        await get().initializeData(); 
+                        get().fetchLeaderboard(); 
+                        return true; 
                     } else if (res.status === 404) {
                         set({ loading: false });
-                        return false; // User not found
+                        return false; 
                     }
                 } catch (error) {
                     console.error("Login Error:", error);
@@ -80,13 +123,15 @@ export const useStore = create(
                         avatar: '👤',
                         activity: { steps: 4500, sleepHours: 7 },
                         anonymousID: null,
-                        mongoId: null
+                        mongoId: null,
+                        points: 0
                     },
                     history: [],
                     totalToday: 0,
-                    streak: 0
+                    streak: 0,
+                    leaderboard: []
                 });
-                localStorage.removeItem('sugar_warrior_storage'); // Clear persisted state
+                localStorage.removeItem('sugar_warrior_storage');
             },
 
             setProfile: async (updates) => {
@@ -98,7 +143,7 @@ export const useStore = create(
                 }
                 set({ profile: newProfile });
 
-                // Backend Sync (Update Only)
+                
                 try {
                     if (newProfile.anonymousID) {
                         await fetch(`${API_URL}/api/users/${newProfile.anonymousID}`, {
@@ -121,7 +166,7 @@ export const useStore = create(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             ...profile,
-                            onboarded: true, // Ensure backend knows they are ready
+                            onboarded: true,
                             anonymousID: profile.anonymousID || Math.random().toString(36).substr(2, 9)
                         })
                     });
@@ -132,6 +177,7 @@ export const useStore = create(
                             profile: { ...state.profile, ...user, mongoId: user._id, onboarded: true },
                             loading: false
                         }));
+                        get().fetchLeaderboard(); 
                         return true;
                     } else {
                         throw new Error('Registration failed');
@@ -143,43 +189,39 @@ export const useStore = create(
                 }
             },
 
-
-
             addEntry: async (entry) => {
-                // Optimistic Update
-                const today = new Date().setHours(0, 0, 0, 0);
-                set((state) => {
-                    const newHistory = [entry, ...state.history];
-                    const total = newHistory
-                        .filter(e => new Date(e.timestamp).setHours(0, 0, 0, 0) === today)
-                        .reduce((acc, curr) => acc + curr.sugarGrams, 0);
-                    return { history: newHistory, totalToday: total };
-                });
+                const { profile, history } = get();
+                
+                if (history.some(e => e.timestamp === entry.timestamp)) return;
 
-                // Backend Sync
-                const { profile } = get();
-                if (profile.mongoId) {
-                    try {
-                        const res = await fetch(`${API_URL}/api/sugar-events`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                userId: profile.mongoId,
-                                foodName: entry.foodName,
-                                sugarGrams: entry.sugarGrams,
-                                calories: entry.calories,
-                                category: entry.category,
-                                method: entry.method,
-                                timestamp: entry.timestamp
-                            })
-                        });
+ 
+                const newHistory = [entry, ...history];
+                set({ history: newHistory });
+                get()._recalcDailyStats();
 
-                        if (res.ok) {
-                            const data = await res.json();
+                try {
+                    const res = await fetch(`${API_URL}/api/sugar-events`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: profile.mongoId,
+                            ...entry,
+                            isRecommendation: entry.isRecommendation || false
+                        })
+                    });
 
-                            // Update State with new points and streak
-                            set(state => ({
-                                streak: data.streak || state.streak, // Update streak
+                    if (res.ok) {
+                        const data = await res.json();
+
+                      
+                        set(state => {
+                            const updatedHistory = state.history.map(e =>
+                                e.id === entry.id ? { ...e, ...data, id: data._id, foodName: data.itemName } : e
+                            );
+
+                            return {
+                                history: updatedHistory,
+                                streak: data.streak || state.streak,
                                 profile: {
                                     ...state.profile,
                                     points: (state.profile.points || 0) + (data.pointsEarned || 0)
@@ -188,32 +230,25 @@ export const useStore = create(
                                     points: data.pointsEarned,
                                     messages: data.pointsMessages
                                 } : null
-                            }));
+                            };
+                        });
 
-                            // Auto-clear notification after 4 seconds
-                            if (data.pointsEarned > 0) {
-                                setTimeout(() => set({ notification: null }), 4000);
-                            }
-
-                            return { pointsEarned: data.pointsEarned, messages: data.pointsMessages };
+                     
+                        if (data.pointsEarned > 0) {
+                            setTimeout(() => set({ notification: null }), 4000);
                         }
-                    } catch (e) { console.error("Event Sync Failed", e); }
-                }
-                return null;
+
+                        return { pointsEarned: data.pointsEarned, messages: data.pointsMessages };
+                    }
+                } catch (e) { console.error("Event Sync Failed", e); }
             },
 
             clearNotification: () => set({ notification: null }),
 
             removeEntry: (id) => set((state) => {
                 const newHistory = state.history.filter(e => e.id !== id);
-                const today = new Date().setHours(0, 0, 0, 0);
-                return {
-                    history: newHistory,
-                    totalToday: newHistory
-                        .filter(e => new Date(e.timestamp).setHours(0, 0, 0, 0) === today)
-                        .reduce((acc, curr) => acc + curr.sugarGrams, 0)
-                };
-            }),
+                return { history: newHistory }; 
+            }), 
 
             initializeData: async () => {
                 const { profile } = get();
@@ -227,23 +262,18 @@ export const useStore = create(
                         const eventsRes = await fetch(`${API_URL}/api/sugar-events/${user._id}`);
                         const events = eventsRes.ok ? await eventsRes.json() : [];
 
-                        // Map Backend Fields (itemName, _id) -> Frontend Fields (foodName, id)
+                       
                         const mappedEvents = events.map(e => ({
                             ...e,
                             id: e._id,
                             foodName: e.itemName
                         }));
 
-                        const today = new Date().setHours(0, 0, 0, 0);
-                        const total = mappedEvents
-                            .filter(e => new Date(e.timestamp).setHours(0, 0, 0, 0) === today)
-                            .reduce((acc, curr) => acc + curr.sugarGrams, 0);
-
-                        set({ profile: { ...profile, ...user, mongoId: user._id }, history: mappedEvents, totalToday: total });
+                        set({ profile: { ...profile, ...user, mongoId: user._id }, history: mappedEvents });
+                        get()._recalcDailyStats();
                     } else if (userRes.status === 404) {
-                        // Self-healing: Backend doesn't know this user (likely deleted). Reset local state.
                         console.warn("User ID invalid (404). Resetting profile.");
-                        get().logout(); // Use logout to reset
+                        get().logout();
                     }
                 } catch (e) { console.error("Init Error", e); }
                 finally { set({ loading: false }); }
@@ -252,9 +282,9 @@ export const useStore = create(
             resetProgress: () => set({ history: [], totalToday: 0, streak: 0 })
         }),
         {
-            name: 'sugar-warrior-storage', // name of the item in storage
+            name: 'sugar-warrior-storage',
             storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({ profile: state.profile }), // Only persist the profile/ID
+            partialize: (state) => ({ profile: state.profile, history: state.history, leaderboard: state.leaderboard }),
         }
     )
 );

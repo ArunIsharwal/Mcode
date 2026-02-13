@@ -4,33 +4,52 @@ import { motion } from 'framer-motion';
 
 const SugarHeatmap = ({ userId }) => {
     const [data, setData] = useState([]);
+    const API_URL = import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
         if (userId) {
-            
-            const generateData = () => {
-                const days = [];
-                const today = new Date();
-                for (let i = 0; i < 365; i++) {
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - i);
-                    days.push({
-                        date: date.toISOString().split('T')[0],
-                        count: Math.floor(Math.random() * 5), 
-                        intensity: Math.random() > 0.8 ? 'high' : Math.random() > 0.5 ? 'medium' : 'low'
-                    });
+            const fetchHeatmapData = async () => {
+                try {
+                    const res = await fetch(`${API_URL}/api/sugar-events/${userId}`);
+                    if (res.ok) {
+                        const events = await res.json();
+
+                       
+                        const dateMap = {};
+                        events.forEach(event => {
+                            const date = new Date(event.timestamp).toISOString().split('T')[0];
+                            if (!dateMap[date]) dateMap[date] = 0;
+                            dateMap[date] += event.sugarGrams;
+                        });
+
+                      
+                        const days = [];
+                        const today = new Date();
+                        for (let i = 0; i < 365; i++) {
+                            const d = new Date(today);
+                            d.setDate(d.getDate() - i);
+                            const dateStr = d.toISOString().split('T')[0];
+                            days.push({
+                                date: dateStr,
+                                count: dateMap[dateStr] ? Math.min(Math.floor(dateMap[dateStr] / 10), 4) : 0, // Normalize for color intensity (0-4)
+                                rawGrams: dateMap[dateStr] || 0
+                            });
+                        }
+                        setData(days.reverse());
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch heatmap data", error);
                 }
-                return days.reverse();
             };
-            setData(generateData());
+            fetchHeatmapData();
         }
     }, [userId]);
 
     const getColor = (count) => {
         if (count === 0) return 'bg-white/5';
         if (count < 2) return 'bg-emerald-500/40'; 
-        if (count < 4) return 'bg-yellow-500/60'; 
-        return 'bg-red-600'; 
+        if (count < 4) return 'bg-yellow-500/60';
+        return 'bg-red-600';
     };
 
     return (

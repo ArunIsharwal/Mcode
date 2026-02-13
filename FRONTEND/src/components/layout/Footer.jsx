@@ -9,12 +9,12 @@ const Footer = () => {
     return (
         <footer className="w-full px-4 pb-10 mt-20">
             <div className="max-w-6xl mx-auto p-8 md:p-12 rounded-[40px] bg-white/[0.02] backdrop-blur-xl border border-white/5 relative overflow-hidden group">
-                {/* Subtle Background Glow */}
+              
                 <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
                 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
                     
-                    {/* Brand Section */}
+                  
                     <div className="md:col-span-5 flex flex-col items-start gap-4">
                         <div className="flex items-center gap-2 group/logo">
                             <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover/logo:rotate-12 transition-transform duration-300">
@@ -45,7 +45,7 @@ const Footer = () => {
                         </div>
                     </div>
 
-                    {/* Navigation Column */}
+                    
                     <div className="md:col-span-3 flex flex-col gap-4">
                         <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Navigation</h4>
                         <nav className="flex flex-col gap-3">
@@ -62,7 +62,7 @@ const Footer = () => {
                         </nav>
                     </div>
 
-                    {/* Status/CTA Column */}
+                  
                     <div className="md:col-span-4 flex flex-col gap-4">
                         <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Status</h4>
                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
@@ -78,7 +78,7 @@ const Footer = () => {
 
                 </div>
 
-                {/* Bottom Bar */}
+                
                 <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
                         &copy; {currentYear} BEAT THE SPIKE. ALL RIGHTS RESERVED.
@@ -92,7 +92,7 @@ const Footer = () => {
                         >
                             <Heart className="w-3 h-3 text-red-500 fill-red-500/20" />
                         </motion.span>
-                        by the dev team
+                        by the Bug Smashers
                     </div>
                 </div>
             </div>
