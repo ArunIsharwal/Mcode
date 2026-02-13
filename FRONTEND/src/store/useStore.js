@@ -19,12 +19,17 @@ export const useStore = create(
                 avatar: '👤',
                 activity: { steps: 4500, sleepHours: 7 },
                 anonymousID: null,
-                mongoId: null
+                anonymousID: null,
+                mongoId: null,
+                points: 0 // Added points
             },
             history: [],
             totalToday: 0,
             streak: 3,
+            totalToday: 0,
+            streak: 3,
             loading: false,
+            notification: null, // Global notification for gamification
 
             // HELPER: Calculate BMI locally
             _calcBMI: (w, h) => {
@@ -88,39 +93,57 @@ export const useStore = create(
                 const currentProfile = get().profile;
                 let newProfile = { ...currentProfile, ...updates };
 
-                // Auto-calculate BMI if vitals changed
                 if (updates.height || updates.weight) {
                     newProfile.bmi = get()._calcBMI(newProfile.weight, newProfile.height);
                 }
-
-                // Optimistic UI Update
                 set({ profile: newProfile });
 
+                // Backend Sync (Update Only)
                 try {
                     if (newProfile.anonymousID) {
-                        // Update existing user
                         await fetch(`${API_URL}/api/users/${newProfile.anonymousID}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(updates)
                         });
-                    } else if (updates.onboarded) {
-                        // Create new user (Register)
-                        const anonymousID = Math.random().toString(36).substr(2, 9);
-                        const res = await fetch(`${API_URL}/api/users`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ ...newProfile, anonymousID })
-                        });
-                        if (res.ok) {
-                            const user = await res.json();
-                            set({ profile: { ...newProfile, anonymousID: user.anonymousID, mongoId: user._id } });
-                        }
                     }
                 } catch (error) {
                     console.error("Sync Error:", error);
                 }
             },
+
+            register: async () => {
+                set({ loading: true });
+                const { profile } = get();
+                try {
+                    const res = await fetch(`${API_URL}/api/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...profile,
+                            onboarded: true, // Ensure backend knows they are ready
+                            anonymousID: profile.anonymousID || Math.random().toString(36).substr(2, 9)
+                        })
+                    });
+
+                    if (res.ok) {
+                        const user = await res.json();
+                        set(state => ({
+                            profile: { ...state.profile, ...user, mongoId: user._id, onboarded: true },
+                            loading: false
+                        }));
+                        return true;
+                    } else {
+                        throw new Error('Registration failed');
+                    }
+                } catch (error) {
+                    console.error("Registration Error:", error);
+                    set({ loading: false });
+                    return false;
+                }
+            },
+
+
 
             addEntry: async (entry) => {
                 // Optimistic Update
@@ -137,12 +160,12 @@ export const useStore = create(
                 const { profile } = get();
                 if (profile.mongoId) {
                     try {
-                        await fetch(`${API_URL}/api/sugar-events`, {
+                        const res = await fetch(`${API_URL}/api/sugar-events`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userId: profile.mongoId,
-                                foodName: entry.foodName, // Match backend expectation (it maps this to itemName)
+                                foodName: entry.foodName,
                                 sugarGrams: entry.sugarGrams,
                                 calories: entry.calories,
                                 category: entry.category,
@@ -150,9 +173,36 @@ export const useStore = create(
                                 timestamp: entry.timestamp
                             })
                         });
+
+                        if (res.ok) {
+                            const data = await res.json();
+
+                            // Update State with new points and streak
+                            set(state => ({
+                                streak: data.streak || state.streak, // Update streak
+                                profile: {
+                                    ...state.profile,
+                                    points: (state.profile.points || 0) + (data.pointsEarned || 0)
+                                },
+                                notification: data.pointsEarned > 0 ? {
+                                    points: data.pointsEarned,
+                                    messages: data.pointsMessages
+                                } : null
+                            }));
+
+                            // Auto-clear notification after 4 seconds
+                            if (data.pointsEarned > 0) {
+                                setTimeout(() => set({ notification: null }), 4000);
+                            }
+
+                            return { pointsEarned: data.pointsEarned, messages: data.pointsMessages };
+                        }
                     } catch (e) { console.error("Event Sync Failed", e); }
                 }
+                return null;
             },
+
+            clearNotification: () => set({ notification: null }),
 
             removeEntry: (id) => set((state) => {
                 const newHistory = state.history.filter(e => e.id !== id);
