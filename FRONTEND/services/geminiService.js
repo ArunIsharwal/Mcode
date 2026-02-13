@@ -1,12 +1,4 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-const apiKey = process.env.API_KEY || "";
-
-const ai = new GoogleGenAI({ apiKey });
-
-
-
 export const analyzeImageWithGemini = async (file) => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -25,42 +17,39 @@ export const analyzeImageWithGemini = async (file) => {
 };
 
 
-
-
 export const estimateSugarContent = async (input) => {
-    try {
-        if (!apiKey) {
-            console.warn("API Key not found for Gemini.");
-         
-            return null;
-        }
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp", 
-            
-            contents: `Estimate the sugar content (in grams) for the following food item or meal: "${input}". Provide a realistic estimate for typical serving sizes.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        foodName: { type: Type.STRING, description: "Corrected name of the food" },
-                        sugarGrams: { type: Type.NUMBER, description: "Estimated grams of sugar" },
-                        calories: { type: Type.NUMBER, description: "Estimated calories" },
-                        category: {
-                            type: Type.STRING,
-                            enum: ['drink', 'snack', 'meal', 'fruit'],
-                            description: "The food category"
-                        }
-                    },
-                    required: ["foodName", "sugarGrams", "category"]
-                }
-            }
-        });
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            console.log("Mock Estimation: Returning simulated result for", input);
 
-        const data = JSON.parse(response.text()); 
-        return data;
-    } catch (error) {
-        console.error("AI Estimation Error:", error);
-        return null;
-    }
+          
+            const lowerInput = input.toLowerCase();
+            let sugar = 10;
+            let cals = 150;
+            let cat = 'snack';
+
+            if (lowerInput.includes('coke') || lowerInput.includes('soda')) {
+                sugar = 39;
+                cals = 140;
+                cat = 'drink';
+            } else if (lowerInput.includes('apple') || lowerInput.includes('fruit')) {
+                sugar = 19;
+                cals = 95;
+                cat = 'fruit';
+            } else if (lowerInput.includes('burger') || lowerInput.includes('meal')) {
+                sugar = 5;
+                cals = 500;
+                cat = 'meal';
+            }
+
+            resolve({
+                foodName: input,
+                sugarGrams: sugar,
+                calories: cals,
+                category: cat,
+                valid: true,
+                isMock: true
+            });
+        }, 1000);
+    });
 };
