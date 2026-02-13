@@ -2,18 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-// Actually, let's use a simple custom tooltip for simplicity without installing radix if not present.
-// Or just hover title.
-
 const SugarHeatmap = ({ userId }) => {
     const [data, setData] = useState([]);
 
     useEffect(() => {
         if (userId) {
-            // Mock fetching or use store in real app, but component is requested to use MongoDB
-            // For now we simulate the grid data with mock + live data
-            // In a real implementation: fetch(`/api/sugar-events/${userId}`)
-            // Here we will generate a year's worth of empty data and fill with some "events"
+            
             const generateData = () => {
                 const days = [];
                 const today = new Date();
@@ -22,7 +16,7 @@ const SugarHeatmap = ({ userId }) => {
                     date.setDate(date.getDate() - i);
                     days.push({
                         date: date.toISOString().split('T')[0],
-                        count: Math.floor(Math.random() * 5), // Mock intensity
+                        count: Math.floor(Math.random() * 5), 
                         intensity: Math.random() > 0.8 ? 'high' : Math.random() > 0.5 ? 'medium' : 'low'
                     });
                 }
@@ -34,9 +28,9 @@ const SugarHeatmap = ({ userId }) => {
 
     const getColor = (count) => {
         if (count === 0) return 'bg-white/5';
-        if (count < 2) return 'bg-emerald-500/40'; // Low sugar
-        if (count < 4) return 'bg-yellow-500/60'; // Moderate
-        return 'bg-red-600'; // Emergency Red
+        if (count < 2) return 'bg-emerald-500/40'; 
+        if (count < 4) return 'bg-yellow-500/60'; 
+        return 'bg-red-600'; 
     };
 
     return (
